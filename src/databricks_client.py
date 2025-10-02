@@ -172,31 +172,164 @@ class DatabricksClient:
         """
         try:
             # Use the workspace export API to get file content
-            exported_content = self.workspace_client.workspace.export(
-                path=workspace_path,
-                format=workspace.ExportFormat.AUTO
-            )
+            # Try different export formats for PDF files
+            exported_content = None
+
+            # For PDF files, try SOURCE format first (raw binary)
+            if workspace_path.lower().endswith('.pdf'):
+                try:
+                    exported_content = self.workspace_client.workspace.export(
+                        path=workspace_path,
+                        format=workspace.ExportFormat.SOURCE
+                    )
+                except Exception as e:
+                    logger.warning(f"SOURCE format failed for {workspace_path}: {e}")
+
+            # Fallback to other formats if SOURCE fails
+            if not exported_content:
+                for format_type in [workspace.ExportFormat.SOURCE, workspace.ExportFormat.HTML, workspace.ExportFormat.JUPYTER]:
+                    try:
+                        exported_content = self.workspace_client.workspace.export(
+                            path=workspace_path,
+                            format=format_type
+                        )
+                        if exported_content and exported_content.content:
+                            logger.info(f"Successfully exported {workspace_path} using {format_type}")
+                            break
+                    except Exception as e:
+                        logger.debug(f"Export format {format_type} failed for {workspace_path}: {e}")
+                        continue
 
             if exported_content and exported_content.content:
-                # The content is already base64 encoded string, decode it to bytes
+                # The content might be base64 encoded string or already bytes
                 try:
-                    file_content = base64.b64decode(exported_content.content)
-                    logger.info(f"Successfully exported file from {workspace_path} ({len(file_content)} bytes)")
-                    return file_content
-                except Exception as decode_error:
-                    # If base64 decode fails, the content might already be bytes
-                    logger.warning(f"Base64 decode failed, trying direct content: {decode_error}")
+                    # First check if it's already bytes and looks like base64
                     if isinstance(exported_content.content, bytes):
-                        return exported_content.content
-                    else:
-                        # Try encoding the string as bytes
+                        logger.info(f"Content is bytes, first 20: {exported_content.content[:20]}")
+                        # Check if it looks like base64 encoded content (PDF starts with JVBERi in base64)
+                        starts_with_jvberi = exported_content.content.startswith(b'JVBERi')
+                        logger.info(f"Starts with JVBERi: {starts_with_jvberi}")
+
+                        if starts_with_jvberi:  # '%PDF' in base64
+                            logger.info(f"Detected base64 encoded PDF, decoding...")
+                            # Decode the base64
+                            file_content = base64.b64decode(exported_content.content)
+                            logger.info(f"Successfully decoded base64 content from {workspace_path} ({len(file_content)} bytes)")
+                            return file_content
+                        else:
+                            # Already proper binary content
+                            logger.info(f"Successfully exported binary file from {workspace_path} ({len(exported_content.content)} bytes)")
+                            return exported_content.content
+
+                    # If it's a string, try to decode as base64
+                    file_content = base64.b64decode(exported_content.content)
+                    logger.info(f"Successfully decoded base64 string from {workspace_path} ({len(file_content)} bytes)")
+                    return file_content
+
+                except Exception as decode_error:
+                    # If base64 decode fails, the content might be plain text
+                    logger.warning(f"Base64 decode failed, trying direct content: {decode_error}")
+                    if isinstance(exported_content.content, str):
+                        # For text files, encode as UTF-8
                         return exported_content.content.encode('utf-8')
+                    else:
+                        # Last resort - return as is
+                        return exported_content.content
             else:
                 logger.warning(f"No content returned from workspace export: {workspace_path}")
-                return None
+                # Try alternative download method for PDFs
+                return self._download_file_direct(workspace_path)
 
         except Exception as e:
             logger.error(f"Failed to export file from {workspace_path}: {str(e)}")
+            # Try alternative download method as fallback
+            return self._download_file_direct(workspace_path)
+
+    def _download_file_direct(self, workspace_path: str) -> Optional[bytes]:
+        """
+        Alternative method to download files using direct API calls.
+
+        Args:
+            workspace_path: Path to file in workspace
+
+        Returns:
+            File content as bytes or None if failed
+        """
+        try:
+            logger.info(f"Attempting direct download of {workspace_path}")
+
+            # Try using the workspace client's download method if available
+            try:
+                response = self.workspace_client.workspace.download(workspace_path)
+                if response:
+                    logger.info(f"Successfully downloaded file from {workspace_path} ({len(response)} bytes)")
+                    return response
+            except AttributeError:
+                logger.debug("Download method not available, trying REST API")
+            except Exception as e:
+                logger.debug(f"Download method failed: {e}")
+
+            # Fallback to REST API call
+            return self._download_via_rest_api(workspace_path)
+
+        except Exception as e:
+            logger.error(f"Direct download failed for {workspace_path}: {str(e)}")
+            return None
+
+    def _download_via_rest_api(self, workspace_path: str) -> Optional[bytes]:
+        """
+        Download file using direct REST API calls.
+
+        Args:
+            workspace_path: Path to file in workspace
+
+        Returns:
+            File content as bytes or None if failed
+        """
+        try:
+            logger.info(f"Attempting REST API download of {workspace_path}")
+
+            # Get the workspace URL and token from the client config
+            host = self.workspace_client.config.host
+            token = self.workspace_client.config.token
+
+            # Construct the export API URL
+            url = f"{host}/api/2.0/workspace/export"
+
+            headers = {
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json'
+            }
+
+            # Try different formats for PDF files
+            for format_type in ['SOURCE', 'AUTO']:
+                try:
+                    payload = {
+                        'path': workspace_path,
+                        'format': format_type
+                    }
+
+                    response = requests.get(url, headers=headers, params=payload)
+
+                    if response.status_code == 200:
+                        result = response.json()
+                        if 'content' in result:
+                            # Decode base64 content
+                            file_content = base64.b64decode(result['content'])
+                            logger.info(f"Successfully downloaded via REST API: {workspace_path} ({len(file_content)} bytes)")
+                            return file_content
+                    else:
+                        logger.debug(f"REST API format {format_type} failed with status {response.status_code}")
+
+                except Exception as e:
+                    logger.debug(f"REST API format {format_type} failed: {e}")
+                    continue
+
+            logger.warning(f"All REST API download methods failed for {workspace_path}")
+            return None
+
+        except Exception as e:
+            logger.error(f"REST API download failed for {workspace_path}: {str(e)}")
             return None
 
     def execute_sql_query(self, sql_query: str, warehouse_id: str = None) -> Dict[str, Any]:
