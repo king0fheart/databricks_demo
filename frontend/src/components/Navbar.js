@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   AppBar,
   Toolbar,
@@ -6,13 +6,8 @@ import {
   IconButton,
   Box,
   Chip,
-  Avatar,
-} from '@mui/material';
-import {
-  Menu,
-  Storage,
-  SmartToy,
-} from '@mui/icons-material';
+} from "@mui/material";
+import { Menu, Storage, SmartToy } from "@mui/icons-material";
 
 const Navbar = ({ onMenuClick, databricksConnected, aiConfigured }) => {
   return (
@@ -27,40 +22,35 @@ const Navbar = ({ onMenuClick, databricksConnected, aiConfigured }) => {
         >
           <Menu />
         </IconButton>
-        
+
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           Databricks PDF Processor
         </Typography>
-        
+
         <Box display="flex" alignItems="center" gap={2}>
           {/* Connection Status */}
           <Box display="flex" alignItems="center" gap={1}>
             <Storage fontSize="small" />
             <Chip
-              label={databricksConnected ? 'Connected' : 'Disconnected'}
-              color={databricksConnected ? 'success' : 'error'}
+              label={databricksConnected ? "Connected" : "Disconnected"}
+              color={databricksConnected ? "success" : "error"}
               size="small"
               variant="outlined"
-              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
+              sx={{ color: "white", borderColor: "rgba(255,255,255,0.5)" }}
             />
           </Box>
-          
+
           {/* AI Status */}
           <Box display="flex" alignItems="center" gap={1}>
             <SmartToy fontSize="small" />
             <Chip
-              label={aiConfigured ? 'AI Ready' : 'AI Not Ready'}
-              color={aiConfigured ? 'success' : 'warning'}
+              label={aiConfigured ? "AI Ready" : "AI Not Ready"}
+              color={aiConfigured ? "success" : "warning"}
               size="small"
               variant="outlined"
-              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
+              sx={{ color: "white", borderColor: "rgba(255,255,255,0.5)" }}
             />
           </Box>
-          
-          {/* User Avatar */}
-          <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-            U
-          </Avatar>
         </Box>
       </Toolbar>
     </AppBar>

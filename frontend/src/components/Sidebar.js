@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Drawer,
   List,
@@ -6,21 +6,18 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Divider,
   Box,
   Typography,
   Chip,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Dashboard,
   CloudUpload,
   Chat,
   Settings,
   Description,
-  Storage,
-  SmartToy,
-} from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
+} from "@mui/icons-material";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const DRAWER_WIDTH = 280;
 
@@ -30,30 +27,30 @@ const Sidebar = ({ open, onClose, databricksConnected, aiConfigured }) => {
 
   const menuItems = [
     {
-      text: 'Dashboard',
+      text: "Dashboard",
       icon: <Dashboard />,
-      path: '/',
+      path: "/",
       enabled: true,
     },
     {
-      text: 'Upload PDFs',
+      text: "Upload PDFs",
       icon: <CloudUpload />,
-      path: '/upload',
+      path: "/upload",
       enabled: databricksConnected,
       requiresConnection: true,
     },
     {
-      text: 'Chat with PDFs',
+      text: "Chat with PDFs",
       icon: <Chat />,
-      path: '/chat',
+      path: "/chat",
       enabled: databricksConnected && aiConfigured,
       requiresConnection: true,
       requiresAI: true,
     },
     {
-      text: 'Settings',
+      text: "Settings",
       icon: <Settings />,
-      path: '/settings',
+      path: "/settings",
       enabled: true,
     },
   ];
@@ -68,54 +65,20 @@ const Sidebar = ({ open, onClose, databricksConnected, aiConfigured }) => {
   };
 
   const getItemColor = (item) => {
-    if (isActive(item.path)) return 'primary';
-    if (!item.enabled) return 'disabled';
-    return 'inherit';
+    if (isActive(item.path)) return "primary";
+    if (!item.enabled) return "disabled";
+    return "inherit";
   };
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ p: 3, borderBottom: 1, borderColor: "divider" }}>
         <Box display="flex" alignItems="center" mb={2}>
           <Description color="primary" sx={{ mr: 1 }} />
           <Typography variant="h6" color="primary">
             PDF Processor
           </Typography>
-        </Box>
-        <Typography variant="body2" color="text.secondary">
-          AI-powered document analysis
-        </Typography>
-      </Box>
-
-      {/* Status Section */}
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="subtitle2" gutterBottom>
-          System Status
-        </Typography>
-        
-        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-          <Box display="flex" alignItems="center">
-            <Storage fontSize="small" sx={{ mr: 1 }} />
-            <Typography variant="body2">Databricks</Typography>
-          </Box>
-          <Chip
-            label={databricksConnected ? 'Connected' : 'Not Connected'}
-            color={databricksConnected ? 'success' : 'error'}
-            size="small"
-          />
-        </Box>
-        
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center">
-            <SmartToy fontSize="small" sx={{ mr: 1 }} />
-            <Typography variant="body2">AI Engine</Typography>
-          </Box>
-          <Chip
-            label={aiConfigured ? 'Ready' : 'Not Ready'}
-            color={aiConfigured ? 'success' : 'warning'}
-            size="small"
-          />
         </Box>
       </Box>
 
@@ -131,11 +94,11 @@ const Sidebar = ({ open, onClose, databricksConnected, aiConfigured }) => {
                 sx={{
                   mx: 1,
                   borderRadius: 1,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.light',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.main',
+                  "&.Mui-selected": {
+                    backgroundColor: "primary.light",
+                    color: "primary.contrastText",
+                    "&:hover": {
+                      backgroundColor: "primary.main",
                     },
                   },
                 }}
@@ -151,10 +114,10 @@ const Sidebar = ({ open, onClose, databricksConnected, aiConfigured }) => {
                   <Chip
                     label={
                       item.requiresAI
-                        ? 'AI Required'
+                        ? "AI Required"
                         : item.requiresConnection
-                        ? 'Setup Required'
-                        : ''
+                        ? "Setup Required"
+                        : ""
                     }
                     size="small"
                     color="warning"
@@ -165,16 +128,6 @@ const Sidebar = ({ open, onClose, databricksConnected, aiConfigured }) => {
             </ListItem>
           ))}
         </List>
-      </Box>
-
-      {/* Footer */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-        <Typography variant="caption" color="text.secondary" display="block">
-          Databricks PDF Processor
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Version 1.0.0
-        </Typography>
       </Box>
     </Box>
   );
@@ -188,9 +141,9 @@ const Sidebar = ({ open, onClose, databricksConnected, aiConfigured }) => {
         keepMounted: true, // Better open performance on mobile
       }}
       sx={{
-        '& .MuiDrawer-paper': {
+        "& .MuiDrawer-paper": {
           width: DRAWER_WIDTH,
-          boxSizing: 'border-box',
+          boxSizing: "border-box",
         },
       }}
     >

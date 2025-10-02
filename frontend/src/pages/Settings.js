@@ -8,13 +8,10 @@ import {
   Button,
   Grid,
   Alert,
-  Divider,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Switch,
-  FormControlLabel,
   CircularProgress,
   Chip,
 } from "@mui/material";
@@ -338,51 +335,6 @@ const Settings = ({
                     : `Configuration failed: ${aiTestResult.error}`}
                 </Alert>
               )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Help & Documentation */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Help & Documentation
-              </Typography>
-
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Databricks Setup
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    1. Go to your Databricks workspace
-                    <br />
-                    2. Click on your profile → User Settings
-                    <br />
-                    3. Go to Access tokens tab
-                    <br />
-                    4. Generate new token
-                    <br />
-                    5. Copy the token and workspace URL
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    AI Configuration
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    • <strong>Databricks AI:</strong> Uses your workspace's AI
-                    functions (recommended)
-                    <br />• <strong>OpenAI:</strong> Requires separate API key
-                    from OpenAI
-                    <br />
-                    • Databricks AI is included in your compute costs
-                    <br />• OpenAI charges per token usage
-                  </Typography>
-                </Grid>
-              </Grid>
             </CardContent>
           </Card>
         </Grid>
