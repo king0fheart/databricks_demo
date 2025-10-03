@@ -1,13 +1,13 @@
-import axios from 'axios';
+import axios from "axios";
 
 // Configure axios defaults
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // 30 seconds timeout
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -18,7 +18,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('API Request Error:', error);
+    console.error("API Request Error:", error);
     return Promise.reject(error);
   }
 );
@@ -30,7 +30,7 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('API Response Error:', error.response?.data || error.message);
+    console.error("API Response Error:", error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
@@ -39,7 +39,7 @@ export const databricksService = {
   // Health check
   async healthCheck() {
     try {
-      const response = await api.get('/health');
+      const response = await api.get("/health");
       return response.data;
     } catch (error) {
       throw new Error(`Health check failed: ${error.message}`);
@@ -49,16 +49,18 @@ export const databricksService = {
   // Databricks connection
   async connect(config) {
     try {
-      const response = await api.post('/api/databricks/connect', config);
+      const response = await api.post("/api/databricks/connect", config);
       return response.data;
     } catch (error) {
-      throw new Error(`Connection failed: ${error.response?.data?.detail || error.message}`);
+      throw new Error(
+        `Connection failed: ${error.response?.data?.detail || error.message}`
+      );
     }
   },
 
   async getStatus() {
     try {
-      const response = await api.get('/api/databricks/status');
+      const response = await api.get("/api/databricks/status");
       return response.data;
     } catch (error) {
       // If status check fails, assume not connected
@@ -69,10 +71,14 @@ export const databricksService = {
   // AI configuration
   async configureAI(config) {
     try {
-      const response = await api.post('/api/ai/configure', config);
+      const response = await api.post("/api/ai/configure", config);
       return response.data;
     } catch (error) {
-      throw new Error(`AI configuration failed: ${error.response?.data?.detail || error.message}`);
+      throw new Error(
+        `AI configuration failed: ${
+          error.response?.data?.detail || error.message
+        }`
+      );
     }
   },
 
@@ -80,12 +86,12 @@ export const databricksService = {
   async uploadPDF(file, createNotebook = false) {
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('create_notebook', createNotebook);
+      formData.append("file", file);
+      formData.append("create_notebook", createNotebook);
 
-      const response = await api.post('/api/pdf/upload', formData, {
+      const response = await api.post("/api/pdf/upload", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round(
@@ -97,30 +103,38 @@ export const databricksService = {
 
       return response.data;
     } catch (error) {
-      throw new Error(`PDF upload failed: ${error.response?.data?.detail || error.message}`);
+      throw new Error(
+        `PDF upload failed: ${error.response?.data?.detail || error.message}`
+      );
     }
   },
 
   async listPDFs() {
     try {
-      const response = await api.get('/api/pdf/list');
+      const response = await api.get("/api/pdf/list");
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to list PDFs: ${error.response?.data?.detail || error.message}`);
+      throw new Error(
+        `Failed to list PDFs: ${error.response?.data?.detail || error.message}`
+      );
     }
   },
 
   // Chat functionality
-  async queryPDF(question, pdfPath, conversationId = null) {
+  async queryPDF(requestData) {
     try {
-      const response = await api.post('/api/chat/query', {
-        question,
-        pdf_path: pdfPath,
-        conversation_id: conversationId,
+      // Use the new direct analyze endpoint that mimics single-page-app
+      const response = await api.post("/api/analyze/pdf", {
+        question: requestData.question,
+        pdf_path: requestData.pdf_path,
+        conversation_id: requestData.conversation_id,
       });
       return response.data;
     } catch (error) {
-      throw new Error(`PDF query failed: ${error.response?.data?.detail || error.message}`);
+      console.error("PDF query error:", error);
+      throw new Error(
+        `PDF query failed: ${error.response?.data?.detail || error.message}`
+      );
     }
   },
 
@@ -129,7 +143,11 @@ export const databricksService = {
       const response = await api.get(`/api/chat/history/${conversationId}`);
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to get conversation history: ${error.response?.data?.detail || error.message}`);
+      throw new Error(
+        `Failed to get conversation history: ${
+          error.response?.data?.detail || error.message
+        }`
+      );
     }
   },
 
@@ -138,27 +156,31 @@ export const databricksService = {
       const response = await api.delete(`/api/chat/history/${conversationId}`);
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to clear conversation history: ${error.response?.data?.detail || error.message}`);
+      throw new Error(
+        `Failed to clear conversation history: ${
+          error.response?.data?.detail || error.message
+        }`
+      );
     }
   },
 };
 
 // Utility functions
 export const formatFileSize = (bytes) => {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
 export const formatDate = (dateString) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  return date.toLocaleDateString() + " " + date.toLocaleTimeString();
 };
 
 export const generateConversationId = () => {
-  return 'conv_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+  return "conv_" + Math.random().toString(36).substr(2, 9) + "_" + Date.now();
 };
 
 export default databricksService;

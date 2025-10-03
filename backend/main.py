@@ -54,6 +54,26 @@ databricks_api: Optional[DatabricksAPIIntegration] = None
 pdf_manager: Optional[PDFManager] = None
 ai_engine: Optional[DatabricksAIEngine] = None
 
+def clean_result_for_json(obj):
+    """
+    Recursively clean a result object to remove bytes and other non-JSON serializable objects.
+    """
+    if isinstance(obj, dict):
+        cleaned = {}
+        for key, value in obj.items():
+            if key == 'file_content' and isinstance(value, bytes):
+                # Skip file_content bytes to avoid JSON serialization error
+                cleaned[key] = f"<bytes object: {len(value)} bytes>"
+            else:
+                cleaned[key] = clean_result_for_json(value)
+        return cleaned
+    elif isinstance(obj, list):
+        return [clean_result_for_json(item) for item in obj]
+    elif isinstance(obj, bytes):
+        return f"<bytes object: {len(obj)} bytes>"
+    else:
+        return obj
+
 # Pydantic models for request/response
 class ConnectionConfig(BaseModel):
     host: str
@@ -216,27 +236,75 @@ async def upload_pdf(
     create_notebook: bool = Form(False),
     db: DatabricksAPIIntegration = Depends(get_databricks_connection)
 ):
-    """Upload PDF to Databricks workspace."""
+    """Upload PDF to Databricks workspace using proven method."""
     try:
         # Validate file type
         if not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Only PDF files are allowed")
-        
+
         # Read file content
         file_content = await file.read()
-        
-        # Upload using existing workflow
-        result = db.upload_pdf_workflow(
+
+        # Use the proven upload method from single-page-app
+        success = await upload_pdf_direct_method(
             file_content=file_content,
             filename=file.filename,
-            create_processing_notebook=create_notebook
+            db=db
         )
-        
-        return result
-        
+
+        if success:
+            return {
+                'success': True,
+                'pdf_path': f"/Workspace/Shared/pdf_uploads/{file.filename}",
+                'filename': file.filename,
+                'size': len(file_content),
+                'upload_method': 'direct_workspace_api',
+                'message': f'PDF uploaded successfully to /Workspace/Shared/pdf_uploads/{file.filename}'
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Upload failed")
+
     except Exception as e:
         logger.error(f"Failed to upload PDF: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+async def upload_pdf_direct_method(file_content: bytes, filename: str, db: DatabricksAPIIntegration) -> bool:
+    """
+    Upload PDF using the proven method from single-page-app (demo-try2.py)
+    """
+    try:
+        import base64
+        import requests
+
+        # Get Databricks credentials
+        host = db.client.host.rstrip('/')
+        token = db.client.token
+
+        # Prepare the API call (same as demo-try2.py)
+        url = f"{host}/api/2.0/workspace/import"
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Base64 encode the file content
+        b64_data = base64.b64encode(file_content).decode("utf-8")
+
+        data = {
+            "path": f"/Workspace/Shared/pdf_uploads/{filename}",
+            "overwrite": True,
+            "format": "AUTO",      # AUTO = auto-detect notebook type
+            "language": "PYTHON",  # Needed for notebooks, ignored for binary files
+            "content": b64_data
+        }
+
+        # Make the API call
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+
+        logger.info(f"Direct upload successful for {filename} ✅")
+        return True
+
+    except Exception as e:
+        logger.error(f"Direct upload failed for {filename}: {str(e)}")
+        return False
 
 @app.get("/api/pdf/list")
 async def list_pdfs(db: DatabricksAPIIntegration = Depends(get_databricks_connection)):
@@ -352,6 +420,50 @@ async def clear_conversation_history(conversation_id: str):
         return {
             "success": False,
             "error": str(e)
+        }
+
+@app.post("/api/analyze/pdf")
+async def analyze_pdf_direct(
+    message: ChatMessage,
+    db: DatabricksAPIIntegration = Depends(get_databricks_connection)
+):
+    """Analyze PDF using the same method as single-page-app."""
+    try:
+        # Import the single-page-app logic
+        import sys
+        import os
+        sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'single-page-app'))
+
+        from databricks_ai import DatabricksAI
+
+        # Get Databricks credentials
+        host = db.client.host.rstrip('/')
+        token = db.client.token
+
+        # Create AI client (same as single-page-app)
+        ai_client = DatabricksAI(host, token)
+
+        # Analyze PDF (same method as single-page-app)
+        result = ai_client.analyze_pdf(message.pdf_path, message.question)
+
+        return {
+            "success": result.get('success', False),
+            "answer": result.get('answer', ''),
+            "conversation_id": message.conversation_id,
+            "error": result.get('error'),
+            "metadata": {
+                "pdf_path": result.get('pdf_path'),
+                "pages_analyzed": result.get('pages_analyzed'),
+                "text_length": result.get('text_length')
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Direct PDF analysis failed: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "conversation_id": message.conversation_id
         }
 
 if __name__ == "__main__":

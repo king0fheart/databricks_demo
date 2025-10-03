@@ -14,6 +14,7 @@ import {
   Dashboard,
   CloudUpload,
   Chat,
+  Analytics,
   Settings,
   Description,
 } from "@mui/icons-material";
@@ -43,6 +44,14 @@ const Sidebar = ({ open, onClose, databricksConnected, aiConfigured }) => {
       text: "Chat with PDFs",
       icon: <Chat />,
       path: "/chat",
+      enabled: databricksConnected && aiConfigured,
+      requiresConnection: true,
+      requiresAI: true,
+    },
+    {
+      text: "Analyze PDFs",
+      icon: <Analytics />,
+      path: "/analyze",
       enabled: databricksConnected && aiConfigured,
       requiresConnection: true,
       requiresAI: true,

@@ -15,6 +15,7 @@ import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import PDFUpload from "./pages/PDFUpload";
 import ChatInterface from "./pages/ChatInterface";
+import AnalyzePage from "./pages/AnalyzePage";
 import Settings from "./pages/Settings";
 
 // Services
@@ -222,6 +223,16 @@ function App() {
                   element={
                     databricksConnected && aiConfigured ? (
                       <ChatInterface />
+                    ) : (
+                      <Navigate to="/settings" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/analyze"
+                  element={
+                    databricksConnected && aiConfigured ? (
+                      <AnalyzePage />
                     ) : (
                       <Navigate to="/settings" replace />
                     )
